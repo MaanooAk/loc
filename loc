@@ -1,0 +1,109 @@
+#!/bin/bash
+
+dir="$HOME/.config/loc"
+store="$dir/store"
+store_tmp="$dir/.store.tmp"
+
+[ -e "$dir" ] || mkdir -p "$dir"
+[ -e "$store" ] || touch "$store"
+
+
+loc_append() { # (path = ".")
+
+	path="$1"
+	[ -n "$path" ] || path="."
+
+	path="$(realpath "$path")"
+
+	(echo "$path"; cat "$store" | grep -vxF "$path") > "$store_tmp"
+	cp "$store_tmp" "$store"
+}
+
+loc_remove() { # (path = ".")
+
+	path="$1"
+	[ -n "$path" ] || path="."
+
+	path="$(realpath "$path")"
+
+	(cat "$store" | grep -vxF "$path") > "$store_tmp"
+	cp "$store_tmp" "$store"
+}
+
+loc_size() {
+
+	echo "$(cat "$store" | wc -l)"
+}
+
+loc_clear() {
+
+	> "$store"
+}
+
+_loc_go() { # (path)
+
+	if [ ! "$1" = "$(realpath ".")" ]; then
+
+		echo "$1"
+		cd "$1"
+	fi
+}
+
+loc_select() { # (exclude = "")
+
+	exclude=""
+	[ -z "$1" ] || exclude="$(realpath "$1")"
+
+	target="$((cat "$store" | grep -vxF "$exclude" ; cat "$store" | grep -xF "$exclude"; echo "> remove") | dmenu -i -p "loc" -l 8)"
+
+	if [ "$?" -ne "0" ]; then
+		: # dmenu failed
+	elif [ "$target" = "> remove" ]; then
+
+		target="$((echo "> all"; cat "$store") | dmenu -i -p "loc remove" -l 8)"
+		if [ "$?" -ne "0" ]; then
+			: # dmenu failed
+		elif [ "$target" = "> all" ]; then
+			loc_clear
+		else
+			loc_remove "$target"
+		fi
+
+	else
+
+		_loc_go $target
+	fi
+}
+
+loc_go() {
+
+	exclude="$(realpath ".")"
+	target="$(cat "$store" | grep -vxF "$exclude" | head -n1)"
+
+	[ -n "$target" ] && _loc_go $target
+}
+
+case "$1" in
+	"")
+		[ "1" -gt "$(loc_size)" ] || loc_select "."
+	;;
+	"clear")
+		loc_clear
+	;;
+	"remove")
+		loc_remove "$2"
+	;;
+	"add")
+		loc_append "$2"
+	;;
+	"go")
+		loc_go
+	;;
+	*)
+		loc_append "$1"
+		[ "2" -gt "$(loc_size)" ] || loc_select
+	;;
+esac
+
+
+
