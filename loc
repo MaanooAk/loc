@@ -32,7 +32,7 @@ loc_remove() { # (path = ".")
 
 loc_size() {
 
-	echo "$(cat "$store" | wc -l)"
+	cat "$store" | wc -l
 }
 
 loc_clear() {
@@ -54,13 +54,13 @@ loc_select() { # (exclude = "")
 	exclude=""
 	[ -z "$1" ] || exclude="$(realpath "$1")"
 
-	target="$((cat "$store" | grep -vxF "$exclude" ; cat "$store" | grep -xF "$exclude"; echo "> remove") | dmenu -i -p "loc" -l 8)"
+	target="$( (cat "$store" | grep -vxF "$exclude" ; cat "$store" | grep -xF "$exclude"; echo "> remove") | dmenu -i -p "loc" -l 8)"
 
 	if [ "$?" -ne "0" ]; then
 		: # dmenu failed
 	elif [ "$target" = "> remove" ]; then
 
-		target="$((echo "> all"; cat "$store") | dmenu -i -p "loc remove" -l 8)"
+		target="$( (echo "> all"; cat "$store") | dmenu -i -p "loc remove" -l 8)"
 		if [ "$?" -ne "0" ]; then
 			: # dmenu failed
 		elif [ "$target" = "> all" ]; then
@@ -71,7 +71,7 @@ loc_select() { # (exclude = "")
 
 	else
 
-		_loc_go $target
+		_loc_go "$target"
 	fi
 }
 
@@ -80,7 +80,7 @@ loc_go() {
 	exclude="$(realpath ".")"
 	target="$(cat "$store" | grep -vxF "$exclude" | head -n1)"
 
-	[ -n "$target" ] && _loc_go $target
+	[ -n "$target" ] && _loc_go "$target"
 }
 
 case "$1" in
