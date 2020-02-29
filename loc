@@ -101,6 +101,9 @@ case "$1" in
 	"go")
 		loc_go
 	;;
+	"edit")
+		$EDITOR "$store"
+	;;
 	*)
 		loc_append "$1"
 		[ "2" -gt "$(loc_size)" ] || loc_select
