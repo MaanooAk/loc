@@ -7,16 +7,18 @@ store_tmp="$dir/.store.tmp"
 [ -e "$dir" ] || mkdir -p "$dir"
 [ -e "$store" ] || touch "$store"
 
+dmenulines=12
 
 loc_append() { # (path = ".")
 
-	path="$1"
-	[ -n "$path" ] || path="."
+	path="${1:-.}"
+	# path="$1"
+	# [ -n "$path" ] || path="."
 
 	path="$(realpath "$path")"
 
 	(echo "$path"; cat "$store" | grep -vxF "$path") > "$store_tmp"
-	cp "$store_tmp" "$store"
+	'cp' "$store_tmp" "$store"
 }
 
 loc_remove() { # (path = ".")
@@ -27,7 +29,7 @@ loc_remove() { # (path = ".")
 	path="$(realpath "$path")"
 
 	(cat "$store" | grep -vxF "$path") > "$store_tmp"
-	cp "$store_tmp" "$store"
+	'cp' "$store_tmp" "$store"
 }
 
 loc_size() {
@@ -54,13 +56,13 @@ loc_select() { # (exclude = "")
 	exclude=""
 	[ -z "$1" ] || exclude="$(realpath "$1")"
 
-	target="$( (cat "$store" | grep -vxF "$exclude" ; cat "$store" | grep -xF "$exclude"; echo "> remove") | dmenu -i -p "loc" -l 8)"
+	target="$( (cat "$store" | grep -vxF "$exclude" ; cat "$store" | grep -xF "$exclude"; echo "> remove") | dmenu -i -p "loc" -l $dmenulines)"
 
 	if [ "$?" -ne "0" ]; then
 		: # dmenu failed
 	elif [ "$target" = "> remove" ]; then
 
-		target="$( (echo "> all"; cat "$store") | dmenu -i -p "loc remove" -l 8)"
+		target="$( (echo "> all"; cat "$store") | dmenu -i -p "loc remove" -l $dmenulines)"
 		if [ "$?" -ne "0" ]; then
 			: # dmenu failed
 		elif [ "$target" = "> all" ]; then
