@@ -2,53 +2,46 @@
 
 dir="$HOME/.config/loc"
 store="$dir/store"
-store_tmp="$dir/.store.tmp"
 
 [ -e "$dir" ] || mkdir -p "$dir"
 [ -e "$store" ] || touch "$store"
 
-dmenulines=12
+
+loc_selector_dmenu() {
+	dmenu -i -p "$1" -l 12
+}
+loc_selector_fzf() {
+	fzf -e --prompt "$1: " --height 12 --reverse
+}
+loc_selector() {
+	loc_selector_fzf "$@"
+}
+
 
 loc_append() { # (path = ".")
+	path="$(realpath "${1:-.}")"
 
-	path="${1:-.}"
-	# path="$1"
-	# [ -n "$path" ] || path="."
-
-	path="$(realpath "$path")"
-
-	(echo "$path"; cat "$store" | grep -vxF "$path") > "$store_tmp"
-	'cp' "$store_tmp" "$store"
+	(echo "$path"; grep -vxF "$path" "$store") | sponge "$store"
 }
 
 loc_remove() { # (path = ".")
+	path="$(realpath "${1:-.}")"
 
-	path="$1"
-	[ -n "$path" ] || path="."
-
-	path="$(realpath "$path")"
-
-	(cat "$store" | grep -vxF "$path") > "$store_tmp"
-	'cp' "$store_tmp" "$store"
+	grep -vxF "$path" "$store" | sponge "$store"
 }
 
 loc_size() {
-
 	cat "$store" | wc -l
 }
 
 loc_clear() {
-
 	> "$store"
 }
 
 _loc_go() { # (path)
 
-	if [ ! "$1" = "$(realpath ".")" ]; then
-
-		echo "$1"
-		cd "$1"
-	fi
+	echo "$1"
+	cd "$1"
 }
 
 loc_select() { # (exclude = "")
@@ -56,16 +49,15 @@ loc_select() { # (exclude = "")
 	exclude=""
 	[ -z "$1" ] || exclude="$(realpath "$1")"
 
-	target="$( (cat "$store" | grep -vxF "$exclude" ; cat "$store" | grep -xF "$exclude"; echo "> remove") | dmenu -i -p "loc" -l $dmenulines)"
+	target="$( (cat "$store" | grep -vxF "$exclude" ; cat "$store" | grep -xF "$exclude"; echo "> remove") | loc_selector "loc")"
+	[ "$?" -ne "0" ] && return
 
-	if [ "$?" -ne "0" ]; then
-		: # dmenu failed
-	elif [ "$target" = "> remove" ]; then
+	if [ "$target" = "> remove" ]; then
 
-		target="$( (echo "> all"; cat "$store") | dmenu -i -p "loc remove" -l $dmenulines)"
-		if [ "$?" -ne "0" ]; then
-			: # dmenu failed
-		elif [ "$target" = "> all" ]; then
+		target="$( (echo "> all"; cat "$store") | loc_selector "loc remove")"
+		[ "$?" -ne "0" ] && return
+
+		if [ "$target" = "> all" ]; then
 			loc_clear
 		else
 			loc_remove "$target"
@@ -109,6 +101,4 @@ case "$1" in
 		[ "2" -gt "$(loc_size)" ] || loc_select
 	;;
 esac
-
-
 

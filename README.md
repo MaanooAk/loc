@@ -28,7 +28,3 @@ Additionally in order for the `cd` commands to work, an alias must be defined
 ```bash
 alias loc=". loc"
 ```
-
-### Dependencies
-
-The script requires the [dmenu](https://tools.suckless.org/dmenu/) tool
